@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Downloader All Sosmed</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Arial', sans-serif;
+    }
+    body {
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 600px;
+      text-align: center;
+    }
+    h2 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      color: #ffffff;
+      font-weight: bold;
+    }
+    label {
+      font-size: 1.1rem;
+      display: block;
+      margin: 15px 0 5px;
+      color: #ddd;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+    }
+    input, select {
+      background: #2c3e50;
+      color: #fff;
+    }
+    button {
+      background: #38bdf8;
+      color: #fff;
+      font-weight: bold;
+      margin-top: 20px;
+      cursor: pointer;
+      transition: 0.3s ease;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    button:hover {
+      background: #0ea5e9;
+    }
+    .loader {
+      margin-top: 20px;
+      width: 40px;
+      height: 40px;
+      border: 5px solid #ccc;
+      border-top: 5px solid #38bdf8;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      display: none;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .status {
+      margin-top: 15px;
+      font-style: italic;
+      color: #fff;
+    }
+    .result {
+      margin-top: 20px;
+    }
+    .popup {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #10b981;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      display: none;
+    }
+    .popup.show {
+      display: block;
+    }
+    .error {
+      background-color: #ef4444 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="popup" id="popup">Processing...</div>
+    <h2>Downloader All Sosmed</h2>
+    <label for="link">Link Sosmed</label>
+    <input type="text" id="link" placeholder="Tempel link TikTok / IG / YouTube" />
+    
+    <label for="mode">Mode</label>
+    <select id="mode">
+      <option value="video">Video</option>
+      <option value="mp3">Audio</option>
+    </select>
+    
+    <label for="res">Resolusi Video</label>
+    <select id="res">
+      <option value="1080p">1080p</option>
+      <option value="720p" selected>720p</option>
+      <option value="480p">480p</option>
+    </select>
+    
+    <label for="quality">Kualitas Audio</label>
+    <select id="quality">
+      <option value="High">High</option>
+      <option value="Medium" selected>Medium</option>
+      <option value="Low">Low</option>
+    </select>
+    
+    <button onclick="download()">Download</button>
+    <div class="loader" id="loader"></div>
+    <div class="status" id="status"></div>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    function showPopup(text, isError = false) {
+      const popup = document.getElementById('popup');
+      popup.innerText = text;
+      popup.classList.toggle('error', isError);
+      popup.classList.add('show');
+      setTimeout(() => popup.classList.remove('show'), 3000);
+    }
+
+    async function download() {
+      const link = document.getElementById("link").value;
+      const mode = document.getElementById("mode").value;
+      const res = document.getElementById("res").value;
+      const quality = document.getElementById("quality").value;
+      const loader = document.getElementById("loader");
+      const status = document.getElementById("status");
+      const result = document.getElementById("result");
+
+      if (!link) {
+        showPopup("Masukin link dulu ya!", true);
+        return;
+      }
+
+      result.innerHTML = '';
+      status.innerText = "Validasi link... tunggu sebentar";
+      loader.style.display = 'block';
+      showPopup("Mulai proses download!");
+
+      try {
+        const resFetch = await fetch('http://127.0.0.1:5000/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ link, type: mode })
+        });
+
+        const data = await resFetch.json();
+        loader.style.display = 'none';
+
+        if (data.status === 'success') {
+          status.innerText = "Berhasil! File siap diunduh.";
+          const a = document.createElement('a');
+          a.href = data.file;
+          a.download = data.file.split('/').pop();
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          showPopup("Download otomatis dimulai!");
+        } else {
+          status.innerText = "Gagal memproses link.";
+          showPopup("Gagal: " + data.message, true);
+        }
+
+      } catch (err) {
+        loader.style.display = 'none';
+        status.innerText = "Terjadi kesalahan saat fetch.";
+        showPopup("Fetch error: " + err.message, true);
+      }
+    }
+  </script>
+</body>
+</html>
